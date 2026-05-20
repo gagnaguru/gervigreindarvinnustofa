@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circuit Sprint — Browser Racer</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap");
+
+    :root {
+      --bg: #0c0f14;
+      --panel: rgba(18, 22, 30, 0.92);
+      --accent: #ff6b35;
+      --accent-dim: #c94f28;
+      --text: #e8ecf4;
+      --muted: #8b94a8;
+      --success: #3ecf8e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: radial-gradient(ellipse 120% 80% at 50% -20%, #1a2538 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: "Outfit", system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    header {
+      text-align: center;
+      max-width: 920px;
+    }
+
+    header h1 {
+      margin: 0 0 4px;
+      font-weight: 800;
+      font-size: clamp(1.25rem, 4vw, 1.75rem);
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    #canvas-shell {
+      position: relative;
+      border-radius: 12px;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 24px 48px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      background: #111820;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100vw;
+      max-height: min(72vh, 640px);
+      width: auto;
+      height: auto;
+      vertical-align: middle;
+    }
+
+    #hud {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      pointer-events: none;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+
+    .hud-box {
+      background: var(--panel);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      min-width: 120px;
+    }
+
+    .hud-box strong {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .lap-best {
+      color: var(--success);
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 10, 14, 0.72);
+      backdrop-filter: blur(6px);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    #overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #overlay-inner {
+      text-align: center;
+      padding: 28px 36px;
+      max-width: 360px;
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    #overlay-inner h2 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    #overlay-inner p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    #overlay-inner kbd {
+      display: inline-block;
+      padding: 2px 8px;
+      margin: 0 2px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85em;
+    }
+
+    #cta {
+      margin-top: 8px;
+      font-weight: 700;
+      color: var(--accent);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.55;
+      }
+    }
+
+    footer {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <header>
+      <h1>Circuit Sprint</h1>
+      <p>Complete 3 laps. Finish line on the starting straight — cross it heading clockwise.</p>
+    </header>
+    <div id="canvas-shell">
+      <canvas id="game" width="880" height="560"></canvas>
+      <div id="hud">
+        <div class="hud-box">
+          <strong>Speed</strong>
+          <span id="speed-val">0</span> km/h
+        </div>
+        <div class="hud-box" style="text-align: right">
+          <strong>Lap</strong>
+          <span id="lap-val">1</span> / 3
+        </div>
+        <div class="hud-box" style="text-align: right">
+          <strong>Time</strong>
+          <span id="time-val">0.00</span>s
+        </div>
+        <div class="hud-box" style="text-align: right">
+          <strong>Best lap</strong>
+          <span id="best-val" class="lap-best">—</span>
+        </div>
+      </div>
+      <div id="overlay" class="visible">
+        <div id="overlay-inner">
+          <h2 id="overlay-title">Circuit Sprint</h2>
+          <p id="overlay-msg">
+            Use <kbd>W</kbd> / <kbd>↑</kbd> throttle &nbsp;·&nbsp; <kbd>S</kbd> / <kbd>↓</kbd> brake<br />
+            <kbd>A</kbd><kbd>D</kbd> or <kbd>←</kbd><kbd>→</kbd> steer<br /><br />
+            Complete clockwise laps crossing the checkered line on the bottom straight (ahead of your grid spot).
+          </p>
+          <p id="cta">Press Space or Enter to start</p>
+        </div>
+      </div>
+    </div>
+    <footer>WASD · Arrow keys · Space</footer>
+  </div>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlay-title");
+      const overlayMsg = document.getElementById("overlay-msg");
+      const cta = document.getElementById("cta");
+      const speedEl = document.getElementById("speed-val");
+      const lapEl = document.getElementById("lap-val");
+      const timeEl = document.getElementById("time-val");
+      const bestEl = document.getElementById("best-val");
+
+      const TRACK = {
+        outer: { x: 70, y: 50, w: canvas.width - 140, h: canvas.height - 100 },
+        inner: { x: 230, y: 145, w: canvas.width - 460, h: canvas.height - 290 },
+      };
+
+      /** Vertical strip on bottom straight — perpendicular to eastbound racing line; placed just ahead of grid */
+      const FINISH = (function () {
+        const innerBottom = TRACK.inner.y + TRACK.inner.h;
+        const outerBottom = TRACK.outer.y + TRACK.outer.h;
+        const x = TRACK.outer.x + TRACK.outer.w * 0.52;
+        return {
+          x,
+          y1: innerBottom + 14,
+          y2: outerBottom - 14,
+          slabHalf: 10,
+        };
+      })();
+
+      const GRID_X = FINISH.x - 115;
+
+      const TOTAL_LAPS = 3;
+
+      let keys = {};
+      let phase = "menu"; // menu | countdown | race | finished
+      let countdown = 3;
+      let countdownAcc = 0;
+      let raceTime = 0;
+      let lapStartTime = 0;
+      let currentLap = 1;
+      let bestLapMs = null;
+      let lastLapMs = null;
+      let visitedNorth = false;
+      let lapGateOk = false;
+
+      const car = {
+        x: GRID_X,
+        y: (FINISH.y1 + FINISH.y2) / 2,
+        angle: 0,
+        vx: 0,
+        vy: 0,
+        maxSpeed: 520,
+        accel: 980,
+        brake: 720,
+        turnRate: 2.85,
+        friction: 0.988,
+      };
+
+      function pointInRing(px, py) {
+        const { outer, inner } = TRACK;
+        const ox =
+          px >= outer.x &&
+          px <= outer.x + outer.w &&
+          py >= outer.y &&
+          py <= outer.y + outer.h;
+        const ix =
+          px >= inner.x &&
+          px <= inner.x + inner.w &&
+          py >= inner.y &&
+          py <= inner.y + inner.h;
+        return ox && !ix;
+      }
+
+      function resolveWall(px, py, ox, oy) {
+        const { outer, inner } = TRACK;
+        let x = px;
+        let y = py;
+
+        if (x < outer.x) x = outer.x;
+        if (x > outer.x + outer.w) x = outer.x + outer.w;
+        if (y < outer.y) y = outer.y;
+        if (y > outer.y + outer.h) y = outer.y + outer.h;
+
+        const ix1 = inner.x;
+        const iy1 = inner.y;
+        const ix2 = inner.x + inner.w;
+        const iy2 = inner.y + inner.h;
+
+        if (x >= ix1 && x <= ix2 && y >= iy1 && y <= iy2) {
+          const dl = Math.abs(x - ix1);
+          const dr = Math.abs(ix2 - x);
+          const dt = Math.abs(y - iy1);
+          const db = Math.abs(iy2 - y);
+          const m = Math.min(dl, dr, dt, db);
+          if (m === dl) x = ix1 - 0.01;
+          else if (m === dr) x = ix2 + 0.01;
+          else if (m === dt) y = iy1 - 0.01;
+          else y = iy2 + 0.01;
+        }
+
+        const nx = x - ox;
+        const ny = y - oy;
+        const len = Math.hypot(nx, ny) || 1;
+        const sx = nx / len;
+        const sy = ny / len;
+        car.vx -= sx * (car.vx * sx + car.vy * sy) * 1.6;
+        car.vy -= sy * (car.vx * sx + car.vy * sy) * 1.6;
+
+        return { x, y };
+      }
+
+      function resetRace() {
+        car.x = GRID_X;
+        car.y = (FINISH.y1 + FINISH.y2) / 2;
+        car.angle = 0;
+        car.vx = 0;
+        car.vy = 0;
+        raceTime = 0;
+        lapStartTime = 0;
+        currentLap = 1;
+        bestLapMs = null;
+        lastLapMs = null;
+        visitedNorth = false;
+        lapGateOk = false;
+      }
+
+      function showOverlay(title, msg, showCta) {
+        overlayTitle.textContent = title;
+        overlayMsg.innerHTML = msg;
+        cta.style.display = showCta ? "block" : "none";
+        overlay.classList.add("visible");
+      }
+
+      function hideOverlay() {
+        overlay.classList.remove("visible");
+      }
+
+      function startGame() {
+        resetRace();
+        phase = "countdown";
+        countdown = 3;
+        countdownAcc = 0;
+        hideOverlay();
+      }
+
+      window.addEventListener("keydown", (e) => {
+        keys[e.code] = true;
+        if (
+          phase === "menu" &&
+          (e.code === "Space" || e.code === "Enter")
+        ) {
+          e.preventDefault();
+          startGame();
+        }
+        if (
+          phase === "finished" &&
+          (e.code === "Space" || e.code === "Enter")
+        ) {
+          e.preventDefault();
+          phase = "menu";
+          showOverlay(
+            "Circuit Sprint",
+            `Use <kbd>W</kbd> / <kbd>↑</kbd> throttle &nbsp;·&nbsp; <kbd>S</kbd> / <kbd>↓</kbd> brake<br /><kbd>A</kbd><kbd>D</kbd> or <kbd>←</kbd><kbd>→</kbd> steer<br /><br />Clockwise laps — cross the checkered line ahead of the grid each lap.`,
+            true
+          );
+        }
+      });
+
+      window.addEventListener("keyup", (e) => {
+        keys[e.code] = false;
+      });
+
+      function drawTrack() {
+        const { outer, inner } = TRACK;
+
+        ctx.fillStyle = "#1e7a45";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#2c3544";
+        ctx.fillRect(outer.x, outer.y, outer.w, outer.h);
+
+        ctx.fillStyle = "#1e7a45";
+        ctx.fillRect(inner.x, inner.y, inner.w, inner.h);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.35)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(outer.x + 1.5, outer.y + 1.5, outer.w - 3, outer.h - 3);
+        ctx.strokeRect(inner.x + 1.5, inner.y + 1.5, inner.w - 3, inner.h - 3);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.lineWidth = 2;
+        const mx = inner.x + inner.w / 2;
+        const my = inner.y + inner.h / 2;
+        ctx.beginPath();
+        ctx.moveTo(mx - inner.w / 2 - 40, my);
+        ctx.lineTo(mx + inner.w / 2 + 40, my);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#444";
+        ctx.lineWidth = 8;
+        ctx.setLineDash([14, 18]);
+        ctx.beginPath();
+        ctx.moveTo(mx - inner.w / 2 - 40, my + 4);
+        ctx.lineTo(mx + inner.w / 2 + 40, my + 4);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const stripeH = 11;
+        const band = FINISH.slabHalf * 2;
+        for (let sy = FINISH.y1; sy < FINISH.y2; sy += stripeH * 2) {
+          ctx.fillStyle = "#eaeaea";
+          ctx.fillRect(FINISH.x - FINISH.slabHalf, sy, band, stripeH);
+          ctx.fillStyle = "#222";
+          ctx.fillRect(FINISH.x - FINISH.slabHalf, sy + stripeH, band, stripeH);
+        }
+      }
+
+      function drawCar() {
+        ctx.save();
+        ctx.translate(car.x, car.y);
+        ctx.rotate(car.angle);
+
+        ctx.shadowColor = "rgba(0,0,0,0.45)";
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4;
+
+        ctx.fillStyle = "#e83535";
+        ctx.fillRect(-18, -10, 36, 20);
+
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+
+        ctx.fillStyle = "#111";
+        ctx.fillRect(10, -9, 8, 6);
+        ctx.fillRect(10, 3, 8, 6);
+        ctx.fillRect(-16, -9, 8, 6);
+        ctx.fillRect(-16, 3, 8, 6);
+
+        ctx.fillStyle = "#ffd447";
+        ctx.fillRect(14, -4, 6, 8);
+
+        ctx.restore();
+      }
+
+      let lastTs = performance.now();
+
+      function update(ts) {
+        const dt = Math.min((ts - lastTs) / 1000, 0.05);
+        lastTs = ts;
+
+        if (phase === "menu") {
+          drawFrame();
+          requestAnimationFrame(update);
+          return;
+        }
+
+        if (phase === "countdown") {
+          countdownAcc += dt;
+          if (countdown > 0) {
+            if (countdownAcc >= 1) {
+              countdown--;
+              countdownAcc = 0;
+            }
+          } else if (countdownAcc >= 0.55) {
+            phase = "race";
+            lapStartTime = 0;
+            raceTime = 0;
+          }
+          drawFrame();
+          requestAnimationFrame(update);
+          return;
+        }
+
+        if (phase === "race") {
+          raceTime += dt;
+          lapStartTime += dt;
+
+          const throttle =
+            keys["ArrowUp"] || keys["KeyW"] ? 1 : keys["ArrowDown"] || keys["KeyS"] ? -1 : 0;
+          const steer =
+            keys["ArrowLeft"] || keys["KeyA"]
+              ? -1
+              : keys["ArrowRight"] || keys["KeyD"]
+                ? 1
+                : 0;
+
+          const speed = Math.hypot(car.vx, car.vy);
+          const moving = speed > 8;
+
+          if (moving || throttle !== 0) {
+            car.angle += steer * car.turnRate * (0.35 + Math.min(speed / car.maxSpeed, 1) * 0.65) * dt;
+          }
+
+          const ax = Math.cos(car.angle) * car.accel * throttle;
+          const ay = Math.sin(car.angle) * car.accel * throttle;
+
+          car.vx += ax * dt;
+          car.vy += ay * dt;
+
+          car.vx *= car.friction;
+          car.vy *= car.friction;
+
+          const sp = Math.hypot(car.vx, car.vy);
+          if (sp > car.maxSpeed) {
+            car.vx = (car.vx / sp) * car.maxSpeed;
+            car.vy = (car.vy / sp) * car.maxSpeed;
+          }
+
+          const ox = car.x;
+          const oy = car.y;
+          car.x += car.vx * dt;
+          car.y += car.vy * dt;
+
+          if (!pointInRing(car.x, car.y)) {
+            const fixed = resolveWall(car.x, car.y, ox, oy);
+            car.x = fixed.x;
+            car.y = fixed.y;
+          }
+
+          const northMark = TRACK.outer.y + TRACK.outer.h * 0.26;
+          if (car.y <= northMark && pointInRing(car.x, car.y)) {
+            visitedNorth = true;
+          }
+
+          const bottomGate = TRACK.outer.y + TRACK.outer.h * 0.72;
+          if (visitedNorth && car.y >= bottomGate && pointInRing(car.x, car.y)) {
+            lapGateOk = true;
+          }
+
+          const fx = FINISH.x;
+          const crossedFinishBand =
+            Math.min(ox, car.x) < fx &&
+            Math.max(ox, car.x) >= fx &&
+            oy >= FINISH.y1 &&
+            oy <= FINISH.y2 &&
+            car.y >= FINISH.y1 &&
+            car.y <= FINISH.y2 &&
+            car.vx > 42;
+
+          if (crossedFinishBand && lapGateOk) {
+            lastLapMs = lapStartTime * 1000;
+            lapStartTime = 0;
+            visitedNorth = false;
+            lapGateOk = false;
+            if (bestLapMs === null || lastLapMs < bestLapMs) bestLapMs = lastLapMs;
+            if (currentLap >= TOTAL_LAPS) {
+              phase = "finished";
+              showOverlay(
+                "Finish!",
+                `Total time: <strong>${raceTime.toFixed(2)}s</strong><br />Best lap: <strong>${bestLapMs !== null ? (bestLapMs / 1000).toFixed(2) + "s" : "—"}</strong><br /><br />Press Space to race again.`,
+                true
+              );
+            } else {
+              currentLap++;
+            }
+          }
+
+          speedEl.textContent = Math.round(sp * 0.55);
+          lapEl.textContent = Math.min(currentLap, TOTAL_LAPS);
+          timeEl.textContent = raceTime.toFixed(2);
+          bestEl.textContent =
+            bestLapMs !== null ? (bestLapMs / 1000).toFixed(2) + "s" : "—";
+        }
+
+        if (phase === "finished") {
+          speedEl.textContent = "0";
+          drawFrame();
+          requestAnimationFrame(update);
+          return;
+        }
+
+        drawFrame();
+        requestAnimationFrame(update);
+      }
+
+      function drawFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawTrack();
+        drawCar();
+
+        if (phase === "countdown") {
+          ctx.fillStyle = "rgba(0,0,0,0.45)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "#fff";
+          ctx.font = "800 96px Outfit, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          const txt = countdown > 0 ? String(countdown) : "GO!";
+          ctx.fillText(txt, canvas.width / 2, canvas.height / 2);
+          ctx.font = "600 18px Outfit, sans-serif";
+          ctx.fillStyle = "rgba(255,255,255,0.9)";
+          ctx.fillText("Get ready…", canvas.width / 2, canvas.height / 2 + 72);
+        }
+      }
+
+      requestAnimationFrame(update);
+    })();
+  </script>
+</body>
+</html>

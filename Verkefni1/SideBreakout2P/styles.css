@@ -1,0 +1,151 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --nova-bg-1: #170228;
+    --nova-bg-2: #2e0750;
+    --nova-bg-3: #0f031c;
+    --nova-pink: #d94f9a;
+    --nova-purple: #8e35f4;
+    --nova-soft: #f6d8ef;
+    --nova-card: rgba(255, 255, 255, 0.08);
+    --nova-border: rgba(255, 255, 255, 0.22);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--nova-soft);
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    background: radial-gradient(circle at 20% 10%, var(--nova-bg-2), var(--nova-bg-3) 60%);
+    overflow: hidden;
+    position: relative;
+}
+
+body::before {
+    content: "NOVA stærsti skemmtistaður í heimi";
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(42px, 6vw, 88px);
+    color: rgba(255, 255, 255, 0.08);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transform: rotate(-11deg);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.game-shell {
+    width: 980px;
+    max-width: 96vw;
+    z-index: 1;
+}
+
+.hud {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.panel {
+    background: var(--nova-card);
+    border: 1px solid var(--nova-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    backdrop-filter: blur(3px);
+}
+
+canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: linear-gradient(180deg, #320a53, #11061f);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.46);
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(7, 1, 16, 0.78);
+    z-index: 2;
+}
+
+.overlay.visible {
+    display: flex;
+}
+
+.overlay-content {
+    width: min(510px, 92vw);
+    background: linear-gradient(155deg, #340b5a, #1a0631);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 26px 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+h1 {
+    margin: 0 0 8px;
+    font-size: 32px;
+    color: #ffffff;
+}
+
+.intro {
+    margin: 0 0 14px;
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.controls {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+}
+
+.controls p {
+    margin: 6px 0;
+}
+
+.controls span {
+    color: #ffffff;
+}
+
+.mode-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.mode-picker label {
+    cursor: pointer;
+}
+
+button {
+    background: linear-gradient(120deg, var(--nova-pink), var(--nova-purple));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:hover {
+    filter: brightness(1.08);
+}

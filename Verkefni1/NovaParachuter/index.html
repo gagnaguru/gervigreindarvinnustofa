@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova Parachuter</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&display=swap");
+
+    :root {
+      --sky-top: #7dd3fc;
+      --sky-mid: #dff7ff;
+      --sky-bottom: #fff7df;
+      --panel: rgba(8, 24, 45, 0.78);
+      --panel-border: rgba(255, 255, 255, 0.16);
+      --text: #f7fbff;
+      --muted: #b7d0e6;
+      --accent: #ff7a18;
+      --accent-2: #ffd166;
+      --danger: #ef476f;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      overflow: hidden;
+      color: var(--text);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.6), transparent 18%),
+        linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 58%, var(--sky-bottom) 100%);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #app {
+      width: min(980px, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header { text-align: center; }
+
+    header h1 {
+      margin: 0;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: clamp(1.8rem, 4.2vw, 3rem);
+      line-height: 0.95;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #17324f;
+      text-shadow: 0 4px 14px rgba(255, 255, 255, 0.45);
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: #36506d;
+      font-size: 0.95rem;
+    }
+
+    #stage {
+      position: relative;
+      width: 100%;
+      border-radius: 24px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(33, 89, 138, 0.18), rgba(255, 255, 255, 0.35));
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.5),
+        0 32px 80px rgba(13, 44, 79, 0.26);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 74vh;
+    }
+
+    #hud {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .hud-cluster {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .hud-card {
+      min-width: 108px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .hud-card strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-family: "Chakra Petch", sans-serif;
+    }
+
+    .hud-card span {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 27, 48, 0.24);
+      backdrop-filter: blur(8px);
+      z-index: 3;
+      transition: opacity 0.3s ease;
+    }
+
+    #overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #overlay-card {
+      width: min(440px, calc(100% - 32px));
+      padding: 28px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(10, 31, 58, 0.9), rgba(18, 45, 80, 0.96));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 30px 60px rgba(4, 13, 24, 0.35);
+      text-align: center;
+    }
+
+    #overlay-card h2 {
+      margin: 0 0 10px;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 2rem;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    #overlay-card p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    #overlay-card kbd {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 0.9em;
+    }
+
+    #cta {
+      margin-top: 8px;
+      color: var(--accent-2);
+      font-weight: 700;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    #touch-controls {
+      position: absolute;
+      inset: auto 14px 14px 14px;
+      display: none;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .touch-btn {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(8, 24, 45, 0.5);
+      color: var(--text);
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 1rem;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+    }
+
+    footer {
+      color: #36506d;
+      font-size: 0.83rem;
+      text-align: center;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 820px) {
+      #hud {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+      }
+
+      .hud-card {
+        min-width: 92px;
+        padding: 8px 10px;
+      }
+
+      #touch-controls {
+        display: flex;
+      }
+
+      canvas {
+        max-height: 78vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Nova Parachuter</h1>
+      <p>Thread the rings, dodge the towers, and drift your way down through the clouds.</p>
+    </header>
+
+    <div id="stage">
+      <canvas id="game" width="920" height="1280"></canvas>
+
+      <div id="hud">
+        <div class="hud-cluster">
+          <div class="hud-card">
+            <strong>Score</strong>
+            <span id="score">0</span>
+          </div>
+          <div class="hud-card">
+            <strong>Best</strong>
+            <span id="best">0</span>
+          </div>
+        </div>
+        <div class="hud-cluster" style="justify-content: flex-end">
+          <div class="hud-card">
+            <strong>Altitude</strong>
+            <span id="altitude">0 m</span>
+          </div>
+          <div class="hud-card">
+            <strong>Lives</strong>
+            <span id="lives">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="overlay">
+        <div id="overlay-card">
+          <h2 id="overlay-title">Nova Parachuter</h2>
+          <p id="overlay-message">
+            Steer with <kbd>A</kbd><kbd>D</kbd> or <kbd>&larr;</kbd><kbd>&rarr;</kbd>.<br />
+            Fly through glowing rings for points and avoid balloons, cliffs, and windmill towers.
+          </p>
+          <p id="cta">Press Space, Enter, or tap to jump</p>
+        </div>
+      </div>
+
+      <div id="touch-controls">
+        <button class="touch-btn" id="left-btn" aria-label="Steer left">LEFT</button>
+        <button class="touch-btn" id="right-btn" aria-label="Steer right">RIGHT</button>
+      </div>
+    </div>
+
+    <footer>Keyboard: A / D or arrow keys. Mobile: hold the on-screen buttons.</footer>
+  </div>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const altitudeEl = document.getElementById("altitude");
+      const livesEl = document.getElementById("lives");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlay-title");
+      const overlayMessage = document.getElementById("overlay-message");
+      const leftBtn = document.getElementById("left-btn");
+      const rightBtn = document.getElementById("right-btn");
+
+      const WORLD_W = canvas.width;
+      const WORLD_H = canvas.height;
+      const BEST_KEY = "nova-parachuter-best";
+
+      const keys = { left: false, right: false };
+      const game = { lives: 3 };
+      const player = {
+        x: WORLD_W / 2,
+        y: WORLD_H * 0.26,
+        width: 48,
+        height: 74,
+        vx: 0,
+        targetTilt: 0,
+        tilt: 0,
+        invuln: 0,
+        pulse: 0,
+      };
+
+      let state = "menu";
+      let lastTime = performance.now();
+      let score = 0;
+      let bestScore = Number(localStorage.getItem(BEST_KEY) || 0);
+      let totalDistance = 0;
+      let speedScale = 1;
+      let particles = [];
+      let clouds = [];
+      let segments = [];
+      let segmentIndex = 0;
+
+      function random(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function showOverlay(title, message) {
+        overlayTitle.textContent = title;
+        overlayMessage.innerHTML = message;
+        overlay.classList.remove("hidden");
+      }
+
+      function hideOverlay() {
+        overlay.classList.add("hidden");
+      }
+
+      function updateHud() {
+        scoreEl.textContent = String(score);
+        bestEl.textContent = String(bestScore);
+        altitudeEl.textContent = `${Math.floor(totalDistance / 10)} m`;
+        livesEl.textContent = String(game.lives);
+      }
+
+      function spawnBurst(x, y, color, count) {
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x,
+            y,
+            vx: random(-120, 120),
+            vy: random(-90, 140),
+            life: random(0.35, 0.8),
+            size: random(3, 8),
+            color,
+          });
+        }
+      }
+
+      function createRing(centerX, y) {
+        return {
+          type: "ring",
+          x: centerX,
+          y,
+          radius: random(44, 58),
+          thickness: 12,
+          scored: false,
+          bob: random(0, Math.PI * 2),
+          points: 10,
+        };
+      }
+
+      function createObstacle(centerX, y, type) {
+        if (type === "balloon") {
+          return { type, x: centerX, y, width: 56, height: 92, sway: random(0, Math.PI * 2) };
+        }
+        if (type === "tower") {
+          return { type, x: centerX, y, width: 86, height: 200, spin: random(0, Math.PI * 2) };
+        }
+        return { type: "cliff", x: centerX, y, width: 120, height: 150, notch: random(28, 52) };
+      }
+
+      function generateSegment(yStart) {
+        const items = [];
+        const laneCenters = [170, 330, 460, 590, 750];
+        const ringCount = 1 + Math.floor(Math.random() * 2);
+        const obstacleCount = 2 + Math.floor(Math.random() * 2) + (segmentIndex > 5 ? 1 : 0);
+        const usedY = [];
+
+        function pickY(offsetMin, offsetMax) {
+          let attempts = 0;
+          while (attempts < 20) {
+            const y = yStart + random(offsetMin, offsetMax);
+            if (usedY.every((u) => Math.abs(u - y) > 120)) {
+              usedY.push(y);
+              return y;
+            }
+            attempts++;
+          }
+          return yStart + random(offsetMin, offsetMax);
+        }
+
+        for (let i = 0; i < ringCount; i++) {
+          const lane = laneCenters[Math.floor(Math.random() * laneCenters.length)];
+          items.push(createRing(lane + random(-30, 30), pickY(80, 480)));
+        }
+
+        for (let i = 0; i < obstacleCount; i++) {
+          const lane = laneCenters[Math.floor(Math.random() * laneCenters.length)];
+          const roll = Math.random();
+          const type = roll < 0.34 ? "balloon" : roll < 0.7 ? "tower" : "cliff";
+          items.push(createObstacle(lane + random(-34, 34), pickY(140, 620), type));
+        }
+
+        segments.push({ yStart, items });
+        segmentIndex++;
+      }
+
+      function generateSegmentsUntil(screenBottom) {
+        let y = -WORLD_H;
+        while (y < screenBottom + 1200) {
+          generateSegment(y);
+          y += 720;
+        }
+      }
+
+      function resetGame() {
+        state = "playing";
+        score = 0;
+        totalDistance = 0;
+        speedScale = 1;
+        particles = [];
+        segmentIndex = 0;
+        segments = [];
+        player.x = WORLD_W / 2;
+        player.vx = 0;
+        player.tilt = 0;
+        player.targetTilt = 0;
+        player.invuln = 0;
+        player.pulse = 0;
+
+        clouds = Array.from({ length: 14 }, (_, i) => ({
+          x: random(40, WORLD_W - 40),
+          y: random(-WORLD_H, WORLD_H),
+          size: random(70, 160),
+          drift: random(-16, 16),
+          tone: i % 2 === 0 ? "rgba(255,255,255,0.72)" : "rgba(242,249,255,0.58)",
+        }));
+
+        game.lives = 3;
+        generateSegmentsUntil(WORLD_H * 1.25);
+        hideOverlay();
+        updateHud();
+      }
+
+      function endGame() {
+        state = "gameover";
+        if (score > bestScore) {
+          bestScore = score;
+          localStorage.setItem(BEST_KEY, String(bestScore));
+        }
+        updateHud();
+        showOverlay(
+          "Jump Complete",
+          `Final score: <strong>${score}</strong><br />Altitude covered: <strong>${Math.floor(totalDistance / 10)} m</strong><br /><br />Press <kbd>Space</kbd>, <kbd>Enter</kbd>, or tap to play again.`
+        );
+      }
+
+      function hitPlayer() {
+        if (player.invuln > 0) return;
+        game.lives--;
+        player.invuln = 1.6;
+        spawnBurst(player.x, player.y + 8, "rgba(239, 71, 111, 0.95)", 20);
+        updateHud();
+        if (game.lives <= 0) endGame();
+      }
+
+      function rectsOverlap(a, b) {
+        return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+      }
+
+      function updatePlayer(dt) {
+        const steer = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+        player.vx += steer * 840 * dt;
+        player.vx *= 0.92;
+        player.vx += Math.sin(totalDistance * 0.0025) * 2.8;
+        player.x += player.vx * dt;
+        player.x = clamp(player.x, 58, WORLD_W - 58);
+        player.targetTilt = clamp(player.vx * 0.025, -0.55, 0.55);
+        player.tilt += (player.targetTilt - player.tilt) * 7 * dt;
+        player.pulse += dt * 5;
+        if (player.invuln > 0) player.invuln -= dt;
+      }
+
+      function updateWorld(dt) {
+        const fallSpeed = 300 + Math.min(220, totalDistance * 0.02);
+        speedScale = fallSpeed;
+        totalDistance += fallSpeed * dt;
+
+        for (const cloud of clouds) {
+          cloud.y += fallSpeed * dt * 0.45;
+          cloud.x += cloud.drift * dt;
+          if (cloud.x < -120) cloud.x = WORLD_W + 120;
+          if (cloud.x > WORLD_W + 120) cloud.x = -120;
+          if (cloud.y - cloud.size > WORLD_H + 120) {
+            cloud.y = -cloud.size - random(30, 220);
+            cloud.x = random(40, WORLD_W - 40);
+          }
+        }
+
+        for (const segment of segments) {
+          segment.yStart += fallSpeed * dt;
+          for (const item of segment.items) {
+            item.y += fallSpeed * dt;
+            if (item.type === "ring") item.bob += dt * 2;
+            if (item.type === "balloon") item.sway += dt * 1.8;
+            if (item.type === "tower") item.spin += dt * 2.4;
+          }
+        }
+
+        segments = segments.filter((segment) => segment.yStart < WORLD_H + 900);
+
+        let topMost = segments.reduce((min, segment) => Math.min(min, segment.yStart), Infinity);
+        while (topMost > -WORLD_H) {
+          topMost -= 720;
+          generateSegment(topMost);
+        }
+      }
+
+      function updateParticles(dt) {
+        particles = particles.filter((p) => p.life > 0);
+        for (const p of particles) {
+          p.life -= dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 220 * dt;
+        }
+      }
+
+      function checkCollisions() {
+        const playerBox = {
+          x: player.x - player.width * 0.38,
+          y: player.y - player.height * 0.18,
+          width: player.width * 0.76,
+          height: player.height * 0.78,
+        };
+
+        for (const segment of segments) {
+          for (const item of segment.items) {
+            if (item.type === "ring" && !item.scored) {
+              const dx = player.x - item.x;
+              const dy = player.y + 10 - item.y;
+              if (Math.hypot(dx, dy) < item.radius - 10) {
+                item.scored = true;
+                score += item.points;
+                spawnBurst(item.x, item.y, "rgba(255, 209, 102, 0.96)", 16);
+                updateHud();
+              }
+              continue;
+            }
+
+            const obstacleBox = {
+              x: item.x - item.width / 2,
+              y: item.y - item.height / 2,
+              width: item.width,
+              height: item.height,
+            };
+
+            if (rectsOverlap(playerBox, obstacleBox)) hitPlayer();
+          }
+        }
+      }
+
+      function drawBackground() {
+        const sky = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+        sky.addColorStop(0, "#8de0ff");
+        sky.addColorStop(0.45, "#d9f3ff");
+        sky.addColorStop(1, "#fff2cc");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        for (let i = 0; i < 6; i++) {
+          ctx.beginPath();
+          ctx.arc(100 + i * 160, 160 + Math.sin(totalDistance * 0.0015 + i) * 24, 46, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        for (const cloud of clouds) {
+          ctx.fillStyle = cloud.tone;
+          ctx.beginPath();
+          ctx.arc(cloud.x, cloud.y, cloud.size * 0.36, 0, Math.PI * 2);
+          ctx.arc(cloud.x + cloud.size * 0.25, cloud.y - cloud.size * 0.08, cloud.size * 0.28, 0, Math.PI * 2);
+          ctx.arc(cloud.x - cloud.size * 0.25, cloud.y - cloud.size * 0.04, cloud.size * 0.24, 0, Math.PI * 2);
+          ctx.arc(cloud.x + cloud.size * 0.05, cloud.y - cloud.size * 0.16, cloud.size * 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawRing(item) {
+        if (item.scored) return;
+        ctx.save();
+        ctx.translate(item.x, item.y + Math.sin(item.bob) * 3);
+        const gradient = ctx.createRadialGradient(0, 0, item.radius * 0.35, 0, 0, item.radius);
+        gradient.addColorStop(0, "rgba(255, 255, 255, 0.3)");
+        gradient.addColorStop(0.6, "rgba(255, 209, 102, 0.25)");
+        gradient.addColorStop(1, "rgba(255, 122, 24, 0.05)");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, item.radius + 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = item.thickness;
+        ctx.strokeStyle = "#ff9e3d";
+        ctx.beginPath();
+        ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#ffe1a6";
+        ctx.beginPath();
+        ctx.arc(0, 0, item.radius - 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawBalloon(item) {
+        ctx.save();
+        ctx.translate(item.x + Math.sin(item.sway) * 12, item.y);
+        ctx.strokeStyle = "rgba(60, 74, 93, 0.55)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, 24);
+        ctx.lineTo(0, 54);
+        ctx.stroke();
+        ctx.fillStyle = "#ef476f";
+        ctx.beginPath();
+        ctx.ellipse(0, -10, 28, 36, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ff93b0";
+        ctx.beginPath();
+        ctx.ellipse(-8, -20, 8, 10, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#7f4f24";
+        ctx.fillRect(-12, 28, 24, 18);
+        ctx.restore();
+      }
+
+      function drawTower(item) {
+        ctx.save();
+        ctx.translate(item.x, item.y);
+        ctx.fillStyle = "#a0b3c4";
+        ctx.fillRect(-12, -84, 24, 168);
+        ctx.strokeStyle = "#d9e6f2";
+        ctx.lineWidth = 10;
+        ctx.lineCap = "round";
+        for (let i = 0; i < 3; i++) {
+          const angle = item.spin + i * (Math.PI * 2 / 3);
+          ctx.beginPath();
+          ctx.moveTo(0, -52);
+          ctx.lineTo(Math.cos(angle) * 60, -52 + Math.sin(angle) * 60);
+          ctx.stroke();
+        }
+        ctx.fillStyle = "#4f6d8a";
+        ctx.beginPath();
+        ctx.arc(0, -52, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawCliff(item) {
+        ctx.save();
+        ctx.translate(item.x, item.y);
+        ctx.fillStyle = "#8f6f52";
+        ctx.beginPath();
+        ctx.moveTo(-item.width / 2, item.height / 2);
+        ctx.lineTo(-item.width / 2 + 12, -item.height / 2 + 18);
+        ctx.lineTo(-10, -item.height / 2 - 10);
+        ctx.lineTo(item.width / 2, -item.height / 2 + item.notch);
+        ctx.lineTo(item.width / 2 - 10, item.height / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#d8bf97";
+        ctx.beginPath();
+        ctx.moveTo(-item.width / 2 + 18, -item.height / 2 + 34);
+        ctx.lineTo(6, -item.height / 2 + 8);
+        ctx.lineTo(item.width / 2 - 10, -item.height / 2 + item.notch + 6);
+        ctx.lineTo(item.width / 2 - 18, -item.height / 2 + item.notch + 22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawPlayer() {
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.tilt);
+        if (player.invuln > 0 && Math.floor(player.invuln * 12) % 2 === 0) ctx.globalAlpha = 0.45;
+
+        ctx.strokeStyle = "rgba(44, 61, 77, 0.45)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-16, -4);
+        ctx.quadraticCurveTo(-72, -92 - Math.sin(player.pulse) * 5, -98, -154);
+        ctx.moveTo(16, -4);
+        ctx.quadraticCurveTo(72, -92 + Math.sin(player.pulse) * 5, 98, -154);
+        ctx.stroke();
+
+        const canopy = ctx.createLinearGradient(0, -164, 0, -86);
+        canopy.addColorStop(0, "#ff8a34");
+        canopy.addColorStop(1, "#ffcd68");
+        ctx.fillStyle = canopy;
+        ctx.beginPath();
+        ctx.moveTo(-104, -152);
+        ctx.quadraticCurveTo(0, -244, 104, -152);
+        ctx.lineTo(84, -118);
+        ctx.quadraticCurveTo(0, -178, -84, -118);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#16324f";
+        ctx.beginPath();
+        ctx.arc(0, -18, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f2c49b";
+        ctx.beginPath();
+        ctx.arc(0, -28, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#23a6d5";
+        ctx.fillRect(-16, -4, 32, 46);
+
+        ctx.strokeStyle = "#10263b";
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(-12, 8);
+        ctx.lineTo(-32, 42);
+        ctx.moveTo(12, 8);
+        ctx.lineTo(32, 42);
+        ctx.moveTo(-8, 42);
+        ctx.lineTo(-20, 78);
+        ctx.moveTo(8, 42);
+        ctx.lineTo(20, 78);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawParticles() {
+        for (const p of particles) {
+          ctx.globalAlpha = Math.max(0, p.life / 0.8);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawWorld() {
+        drawBackground();
+        for (const segment of segments) {
+          for (const item of segment.items) {
+            if (item.type === "ring") drawRing(item);
+          }
+        }
+        for (const segment of segments) {
+          for (const item of segment.items) {
+            if (item.type === "balloon") drawBalloon(item);
+            else if (item.type === "tower") drawTower(item);
+            else if (item.type === "cliff") drawCliff(item);
+          }
+        }
+        drawParticles();
+        drawPlayer();
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.font = '700 22px "Chakra Petch", sans-serif';
+        ctx.textAlign = "right";
+        ctx.fillText(`Fall speed ${Math.round(speedScale)} px/s`, WORLD_W - 18, WORLD_H - 24);
+      }
+
+      function update(timestamp) {
+        const dt = Math.min((timestamp - lastTime) / 1000, 0.033);
+        lastTime = timestamp;
+
+        if (state === "playing") {
+          updateWorld(dt);
+          updatePlayer(dt);
+          updateParticles(dt);
+          checkCollisions();
+          updateHud();
+        }
+
+        drawWorld();
+        requestAnimationFrame(update);
+      }
+
+      function startOrRestart() {
+        resetGame();
+      }
+
+      function setKey(code, active) {
+        if (code === "ArrowLeft" || code === "KeyA") keys.left = active;
+        if (code === "ArrowRight" || code === "KeyD") keys.right = active;
+      }
+
+      window.addEventListener("keydown", (event) => {
+        if (event.code === "Space" || event.code === "Enter") {
+          if (state !== "playing") {
+            event.preventDefault();
+            startOrRestart();
+          }
+        }
+        setKey(event.code, true);
+      });
+
+      window.addEventListener("keyup", (event) => {
+        setKey(event.code, false);
+      });
+
+      function bindTouch(button, keyName) {
+        const on = (event) => {
+          event.preventDefault();
+          keys[keyName] = true;
+          if (state !== "playing") startOrRestart();
+        };
+        const off = (event) => {
+          event.preventDefault();
+          keys[keyName] = false;
+        };
+
+        button.addEventListener("pointerdown", on);
+        button.addEventListener("pointerup", off);
+        button.addEventListener("pointercancel", off);
+        button.addEventListener("pointerleave", off);
+      }
+
+      bindTouch(leftBtn, "left");
+      bindTouch(rightBtn, "right");
+
+      overlay.addEventListener("pointerdown", () => {
+        if (state !== "playing") startOrRestart();
+      });
+
+      bestEl.textContent = String(bestScore);
+      updateHud();
+      requestAnimationFrame(update);
+    })();
+  </script>
+</body>
+</html>

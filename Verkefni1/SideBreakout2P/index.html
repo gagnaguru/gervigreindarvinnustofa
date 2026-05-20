@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVA Side Breakout 2P</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-shell">
+        <div class="hud">
+            <div class="panel">Left (W/S) - Lives: <span id="leftLives">5</span> | Score: <span id="leftScore">0</span></div>
+            <div class="panel">Right (↑/↓) - Lives: <span id="rightLives">5</span> | Score: <span id="rightScore">0</span></div>
+            <div class="panel">Mode: <span id="modeLabel">1 Ball</span> | Bricks: <span id="brickCount">0</span></div>
+        </div>
+        <canvas id="gameCanvas" width="980" height="560"></canvas>
+    </div>
+
+    <div id="startOverlay" class="overlay visible">
+        <div class="overlay-content">
+            <h1>NOVA Side Breakout</h1>
+            <p class="intro">Defend your wall and shoot through the middle brick field.</p>
+            <div class="controls">
+                <p><strong>Left Player:</strong> <span>W / S</span></p>
+                <p><strong>Right Player:</strong> <span>Arrow Up / Arrow Down</span></p>
+            </div>
+            <div class="mode-picker">
+                <label><input type="radio" name="ballMode" value="1" checked> 1 Ball</label>
+                <label><input type="radio" name="ballMode" value="2"> 2 Balls (one from each side)</label>
+            </div>
+            <button id="startBtn">Start Match</button>
+        </div>
+    </div>
+
+    <div id="gameOverOverlay" class="overlay">
+        <div class="overlay-content">
+            <h1 id="gameOverTitle">Game Over</h1>
+            <p id="gameOverText"></p>
+            <button id="restartBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

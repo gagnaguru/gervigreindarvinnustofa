@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pong</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: #fff;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #scoreboard {
+    display: flex;
+    gap: 80px;
+    margin-bottom: 16px;
+    font-size: 28px;
+    letter-spacing: 2px;
+  }
+
+  #scoreboard span {
+    opacity: 0.7;
+    font-size: 14px;
+    text-transform: uppercase;
+  }
+
+  canvas {
+    border: 2px solid #222;
+    border-radius: 4px;
+    display: block;
+  }
+
+  #message {
+    margin-top: 16px;
+    font-size: 14px;
+    opacity: 0.5;
+    height: 20px;
+  }
+
+  #difficulty {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+  }
+
+  #difficulty button {
+    background: transparent;
+    color: #888;
+    border: 1px solid #333;
+    padding: 4px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  #difficulty button:hover {
+    border-color: #666;
+    color: #ccc;
+  }
+
+  #difficulty button.active {
+    border-color: #fff;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div id="scoreboard">
+  <div><span>You</span><br><span id="playerScore">0</span></div>
+  <div><span>CPU</span><br><span id="cpuScore">0</span></div>
+</div>
+
+<canvas id="game"></canvas>
+
+<div id="message">Press any key or tap to start</div>
+
+<div id="difficulty">
+  <button data-diff="easy">Easy</button>
+  <button data-diff="medium" class="active">Medium</button>
+  <button data-diff="hard">Hard</button>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const W = 700;
+const H = 500;
+canvas.width = W;
+canvas.height = H;
+
+const PADDLE_W = 12;
+const PADDLE_H = 80;
+const BALL_R = 7;
+const PADDLE_MARGIN = 20;
+const WIN_SCORE = 7;
+
+const DIFFICULTY = {
+  easy:   { speed: 3.5, accel: 0.3, cpuSpeed: 3.0, reaction: 0.6 },
+  medium: { speed: 5,   accel: 0.5, cpuSpeed: 4.5, reaction: 0.8 },
+  hard:   { speed: 6.5, accel: 0.7, cpuSpeed: 6.0, reaction: 0.95 },
+};
+
+let diff = 'medium';
+let state = 'idle'; // idle | playing | scored | gameover
+
+let playerY, cpuY;
+let ballX, ballY, ballVX, ballVY;
+let playerScore = 0, cpuScore = 0;
+let ballSpeed;
+let trail = [];
+
+function resetPositions() {
+  playerY = H / 2;
+  cpuY = H / 2;
+  ballX = W / 2;
+  ballY = H / 2;
+
+  const angle = (Math.random() * Math.PI / 3) - Math.PI / 6;
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  ballSpeed = DIFFICULTY[diff].speed;
+  ballVX = dir * Math.cos(angle) * ballSpeed;
+  ballVY = Math.sin(angle) * ballSpeed;
+  trail = [];
+}
+
+function setMessage(msg) {
+  document.getElementById('message').textContent = msg;
+}
+
+function updateScoreboard() {
+  document.getElementById('playerScore').textContent = playerScore;
+  document.getElementById('cpuScore').textContent = cpuScore;
+}
+
+resetPositions();
+
+// --- Input ---
+let mouseY = H / 2;
+let usingMouse = false;
+let keys = {};
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseY = ((e.clientY - rect.top) / rect.height) * H;
+  usingMouse = true;
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  mouseY = ((e.touches[0].clientY - rect.top) / rect.height) * H;
+  usingMouse = true;
+}, { passive: false });
+
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (state === 'idle' || state === 'scored' || state === 'gameover') startRound();
+});
+
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+canvas.addEventListener('click', () => {
+  if (state === 'idle' || state === 'scored' || state === 'gameover') startRound();
+});
+
+canvas.addEventListener('touchstart', () => {
+  if (state === 'idle' || state === 'scored' || state === 'gameover') startRound();
+});
+
+// --- Difficulty buttons ---
+document.querySelectorAll('#difficulty button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#difficulty button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    diff = btn.dataset.diff;
+    playerScore = 0;
+    cpuScore = 0;
+    updateScoreboard();
+    resetPositions();
+    state = 'idle';
+    setMessage('Press any key or tap to start');
+  });
+});
+
+function startRound() {
+  if (state === 'gameover') {
+    playerScore = 0;
+    cpuScore = 0;
+    updateScoreboard();
+  }
+  resetPositions();
+  state = 'playing';
+  setMessage('');
+}
+
+// --- Game loop ---
+function update() {
+  if (state !== 'playing') return;
+
+  const cfg = DIFFICULTY[diff];
+
+  // Player paddle
+  if (usingMouse) {
+    playerY = mouseY;
+  } else {
+    const pSpeed = 6;
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) playerY -= pSpeed;
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) playerY += pSpeed;
+  }
+  playerY = Math.max(PADDLE_H / 2, Math.min(H - PADDLE_H / 2, playerY));
+
+  // CPU paddle AI
+  const targetY = ballY + (Math.random() - 0.5) * (1 - cfg.reaction) * PADDLE_H;
+  const cpuDiff = targetY - cpuY;
+  if (Math.abs(cpuDiff) > 2) {
+    cpuY += Math.sign(cpuDiff) * Math.min(Math.abs(cpuDiff), cfg.cpuSpeed);
+  }
+  cpuY = Math.max(PADDLE_H / 2, Math.min(H - PADDLE_H / 2, cpuY));
+
+  // Ball trail
+  trail.push({ x: ballX, y: ballY });
+  if (trail.length > 8) trail.shift();
+
+  // Ball movement
+  ballX += ballVX;
+  ballY += ballVY;
+
+  // Top/bottom bounce
+  if (ballY - BALL_R <= 0) {
+    ballY = BALL_R;
+    ballVY = Math.abs(ballVY);
+  }
+  if (ballY + BALL_R >= H) {
+    ballY = H - BALL_R;
+    ballVY = -Math.abs(ballVY);
+  }
+
+  // Paddle collision (player - left)
+  const pLeft = PADDLE_MARGIN;
+  if (
+    ballX - BALL_R <= pLeft + PADDLE_W &&
+    ballX + BALL_R >= pLeft &&
+    ballY >= playerY - PADDLE_H / 2 &&
+    ballY <= playerY + PADDLE_H / 2 &&
+    ballVX < 0
+  ) {
+    ballX = pLeft + PADDLE_W + BALL_R;
+    const hitPos = (ballY - playerY) / (PADDLE_H / 2);
+    const angle = hitPos * (Math.PI / 3.5);
+    ballSpeed += cfg.accel;
+    ballVX = Math.cos(angle) * ballSpeed;
+    ballVY = Math.sin(angle) * ballSpeed;
+  }
+
+  // Paddle collision (CPU - right)
+  const cLeft = W - PADDLE_MARGIN - PADDLE_W;
+  if (
+    ballX + BALL_R >= cLeft &&
+    ballX - BALL_R <= cLeft + PADDLE_W &&
+    ballY >= cpuY - PADDLE_H / 2 &&
+    ballY <= cpuY + PADDLE_H / 2 &&
+    ballVX > 0
+  ) {
+    ballX = cLeft - BALL_R;
+    const hitPos = (ballY - cpuY) / (PADDLE_H / 2);
+    const angle = hitPos * (Math.PI / 3.5);
+    ballSpeed += cfg.accel;
+    ballVX = -Math.cos(angle) * ballSpeed;
+    ballVY = Math.sin(angle) * ballSpeed;
+  }
+
+  // Scoring
+  if (ballX < -BALL_R * 2) {
+    cpuScore++;
+    updateScoreboard();
+    if (cpuScore >= WIN_SCORE) {
+      state = 'gameover';
+      setMessage('CPU wins! Click or press any key for rematch');
+    } else {
+      state = 'scored';
+      setMessage('CPU scored — tap or press to continue');
+    }
+  }
+
+  if (ballX > W + BALL_R * 2) {
+    playerScore++;
+    updateScoreboard();
+    if (playerScore >= WIN_SCORE) {
+      state = 'gameover';
+      setMessage('You win! Click or press any key for rematch');
+    } else {
+      state = 'scored';
+      setMessage('You scored — tap or press to continue');
+    }
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Center line
+  ctx.setLineDash([8, 10]);
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 0);
+  ctx.lineTo(W / 2, H);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Ball trail
+  for (let i = 0; i < trail.length; i++) {
+    const alpha = (i / trail.length) * 0.25;
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(trail[i].x, trail[i].y, BALL_R * (0.4 + 0.6 * i / trail.length), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Ball
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(ballX, ballY, BALL_R, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ball glow
+  ctx.shadowColor = '#fff';
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.arc(ballX, ballY, BALL_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Player paddle
+  const gradient = ctx.createLinearGradient(PADDLE_MARGIN, 0, PADDLE_MARGIN + PADDLE_W, 0);
+  gradient.addColorStop(0, '#4af');
+  gradient.addColorStop(1, '#28d');
+  ctx.fillStyle = gradient;
+  roundRect(PADDLE_MARGIN, playerY - PADDLE_H / 2, PADDLE_W, PADDLE_H, 4);
+
+  // CPU paddle
+  const gradient2 = ctx.createLinearGradient(W - PADDLE_MARGIN - PADDLE_W, 0, W - PADDLE_MARGIN, 0);
+  gradient2.addColorStop(0, '#f55');
+  gradient2.addColorStop(1, '#c33');
+  ctx.fillStyle = gradient2;
+  roundRect(W - PADDLE_MARGIN - PADDLE_W, cpuY - PADDLE_H / 2, PADDLE_W, PADDLE_H, 4);
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.fill();
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
