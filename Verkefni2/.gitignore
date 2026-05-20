@@ -1,0 +1,29 @@
+# Virtual environment
+.venv/
+venv/
+.env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.idea/
+*.swp
+.DS_Store
+
+# Local AI tooling (runtime artifacts only)
+# Skills and hooks are committed; only caches/state are ignored.
+

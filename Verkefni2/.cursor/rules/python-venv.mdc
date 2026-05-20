@@ -1,0 +1,14 @@
+---
+description: Use the project virtualenv (.venv) for Python, pytest, and pip
+alwaysApply: true
+---
+
+# Python environment
+
+This repo expects dependencies in **`.venv`** at the workspace root.
+
+- Prefer **`.venv/bin/python`** (or activate the venv first) for **`pip`**, **`pytest`**, and **`python`** in terminal commands.
+- Use **`python -m pytest`** from the project root so the interpreter and `PATH` stay tied to `.venv`.
+- If `.venv` is missing, create it with `python3 -m venv .venv` then `pip install -r requirements.txt` using that same interpreter.
+
+On **Windows**, the interpreter path is `.venv\Scripts\python.exe` instead of `.venv/bin/python`.
