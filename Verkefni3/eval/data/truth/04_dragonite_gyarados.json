@@ -1,0 +1,9 @@
+{
+  "winner": "dragonite",
+  "loser": "gyarados",
+  "winner_score": 200.2,
+  "loser_score": 192.6,
+  "key_type_matchups": [
+    {"attacker": "water", "defender": "dragon", "multiplier": 0.5}
+  ]
+}

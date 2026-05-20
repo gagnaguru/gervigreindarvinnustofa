@@ -1,0 +1,11 @@
+{
+  "_note": "USD per 1M tokens. Representative 2026 list prices; update before workshop. Cost = (input_tokens * input + output_tokens * output) / 1e6. cached_input price applies to cached_input_tokens portion of input_tokens.",
+  "models": {
+    "gpt-5.5":           { "input": 1.25, "cached_input": 0.13, "output": 10.00 },
+    "gpt-5.4":           { "input": 1.25, "cached_input": 0.13, "output": 10.00 },
+    "gpt-5.4-mini":      { "input": 0.25, "cached_input": 0.03, "output": 2.00 },
+    "gpt-5.2-codex":     { "input": 1.50, "cached_input": 0.15, "output": 12.00 },
+    "gpt-5.1-codex-max": { "input": 5.00, "cached_input": 0.50, "output": 40.00 }
+  },
+  "default_model": "gpt-5.5"
+}

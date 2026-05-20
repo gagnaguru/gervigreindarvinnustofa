@@ -1,0 +1,10 @@
+{
+  "winner": "gengar",
+  "loser": "snorlax",
+  "winner_score": 208.0,
+  "loser_score": 50.0,
+  "key_type_matchups": [
+    {"attacker": "normal", "defender": "ghost",  "multiplier": 0.0},
+    {"attacker": "ghost",  "defender": "normal", "multiplier": 0.0}
+  ]
+}

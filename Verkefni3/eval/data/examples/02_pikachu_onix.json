@@ -1,0 +1,10 @@
+{
+  "winner": "onix",
+  "loser": "pikachu",
+  "winner_score": 139.0,
+  "loser_score": 61.0,
+  "key_type_matchups": [
+    {"attacker": "electric", "defender": "ground",   "multiplier": 0.0},
+    {"attacker": "ground",   "defender": "electric", "multiplier": 2.0}
+  ]
+}

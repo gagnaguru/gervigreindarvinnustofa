@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BattlePrediction",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "winner",
+    "loser",
+    "winner_score",
+    "loser_score",
+    "key_type_matchups",
+    "commentary"
+  ],
+  "properties": {
+    "winner":       { "type": "string" },
+    "loser":        { "type": "string" },
+    "winner_score": { "type": "number" },
+    "loser_score":  { "type": "number" },
+    "key_type_matchups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["attacker", "defender", "multiplier"],
+        "properties": {
+          "attacker":   { "type": "string" },
+          "defender":   { "type": "string" },
+          "multiplier": { "type": "number" }
+        }
+      }
+    },
+    "commentary":   { "type": "string", "minLength": 1 }
+  }
+}

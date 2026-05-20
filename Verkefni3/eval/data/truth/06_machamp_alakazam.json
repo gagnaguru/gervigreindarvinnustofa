@@ -1,0 +1,10 @@
+{
+  "winner": "alakazam",
+  "loser": "machamp",
+  "winner_score": 353.0,
+  "loser_score": 116.0,
+  "key_type_matchups": [
+    {"attacker": "fighting", "defender": "psychic",  "multiplier": 0.5},
+    {"attacker": "psychic",  "defender": "fighting", "multiplier": 2.0}
+  ]
+}

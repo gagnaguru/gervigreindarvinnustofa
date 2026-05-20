@@ -1,0 +1,10 @@
+{
+  "winner": "alakazam",
+  "loser": "gengar",
+  "winner_score": 353.0,
+  "loser_score": 338.0,
+  "key_type_matchups": [
+    {"attacker": "psychic", "defender": "poison",  "multiplier": 2.0},
+    {"attacker": "ghost",   "defender": "psychic", "multiplier": 2.0}
+  ]
+}

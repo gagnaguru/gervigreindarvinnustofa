@@ -1,0 +1,11 @@
+{
+  "winner": "raichu",
+  "loser": "gyarados",
+  "winner_score": 438.0,
+  "loser_score": 192.6,
+  "key_type_matchups": [
+    {"attacker": "flying",   "defender": "electric", "multiplier": 0.5},
+    {"attacker": "electric", "defender": "water",    "multiplier": 2.0},
+    {"attacker": "electric", "defender": "flying",   "multiplier": 2.0}
+  ]
+}

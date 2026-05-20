@@ -1,0 +1,10 @@
+{
+  "winner": "blastoise",
+  "loser": "charizard",
+  "winner_score": 232.6,
+  "loser_score": 184.6,
+  "key_type_matchups": [
+    {"attacker": "fire",  "defender": "water", "multiplier": 0.5},
+    {"attacker": "water", "defender": "fire",  "multiplier": 2.0}
+  ]
+}

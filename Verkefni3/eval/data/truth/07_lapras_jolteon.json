@@ -1,0 +1,9 @@
+{
+  "winner": "jolteon",
+  "loser": "lapras",
+  "winner_score": 311.0,
+  "loser_score": 147.0,
+  "key_type_matchups": [
+    {"attacker": "electric", "defender": "water", "multiplier": 2.0}
+  ]
+}
