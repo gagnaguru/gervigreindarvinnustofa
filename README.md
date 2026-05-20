@@ -22,6 +22,7 @@ Kennarar og verkefnastjórar:
 
 **Uppsetning fyrir vinnustofu**
 1. Setja upp Codex:
+   - Setja upp node.js til að fá npm.
    - Leiðbeiningar á: https://developers.openai.com/codex/cli
 
 2. Setja upp Python:
